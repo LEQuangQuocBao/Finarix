@@ -35,7 +35,7 @@ class FinanceApp(UIBuildMixin, AppLogicMixin, tk.Tk):
         self._row_widgets          = {"revenu": [], "fixe": [], "variable": []}
         self._section_frames       = {}
         self._section_total_labels = {}
-        self._actifs_vars          = {}
+        self._actif_rows           = []
         self._dette_rows           = []
         self._lbl_total_actifs     = None
         self._lbl_total_dettes     = None

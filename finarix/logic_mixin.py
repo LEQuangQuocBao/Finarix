@@ -31,7 +31,9 @@ class AppLogicMixin:
                 for r in self._row_widgets[key]]
 
     def _collect_actifs(self):
-        return {k: to_float(v.get()) for k, v in self._actifs_vars.items()}
+        return [{"label":   r["label"].get(),
+                 "montant": to_float(r["montant"].get())}
+                for r in self._actif_rows]
 
     def _collect_dettes(self):
         return [{"label":   r["label"].get(),
@@ -122,6 +124,11 @@ class AppLogicMixin:
     def _load_month(self):
         data = load_month_file(self.view_year, self.view_month) \
                or copy.deepcopy(DEFAULT_DATA)
+        # Migrate old actifs dict format {"compte": 0.0, ...} → list format
+        if isinstance(data.get("actifs"), dict):
+            _map = {"compte": "Compte bancaire", "tricount": "Tricount", "etoro": "eToro"}
+            data["actifs"] = [{"label": _map.get(k, k), "montant": v}
+                              for k, v in data["actifs"].items()]
         self._bilan_editing = False
         self._solde_var.set(f"{data.get('solde_initial', 0.0):.2f}")
         self._rebuild_body(data)
@@ -179,7 +186,7 @@ class AppLogicMixin:
             text=fmt(solde_final),
             fg=GREEN if solde_final >= 0 else RED)
 
-        total_actifs = sum(to_float(v.get()) for v in self._actifs_vars.values())
+        total_actifs = sum(to_float(r["montant"].get()) for r in self._actif_rows)
         total_dettes = sum(to_float(r["montant"].get()) for r in self._dette_rows)
         patrimoine   = total_actifs - total_dettes
 

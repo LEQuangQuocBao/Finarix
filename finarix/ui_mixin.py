@@ -3,7 +3,7 @@ import tkinter as tk
 from finarix.config import (
     BG, CARD_BG, HDR_BG, HDR_FG, ACCENT,
     LOCK_BG, LOCK_FG, BORDER, FOOT_BG, SOLDE_BG, ADD_FG,
-    GREEN, RED, SECTION_COLORS, SECTION_TITLES, ACTIFS_FIELDS, DEFAULT_DATA,
+    GREEN, RED, SECTION_COLORS, SECTION_TITLES, DEFAULT_DATA,
 )
 from finarix.finance import to_float
 
@@ -125,7 +125,7 @@ class UIBuildMixin:
         self._row_widgets          = {"revenu": [], "fixe": [], "variable": []}
         self._section_frames       = {}
         self._section_total_labels = {}
-        self._actifs_vars          = {}
+        self._actif_rows           = []
         self._dette_rows           = []
         self._lbl_total_actifs     = None
         self._lbl_total_dettes     = None
@@ -186,31 +186,18 @@ class UIBuildMixin:
                  bg="#1A5276", fg="white",
                  font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
 
-        act_frame = tk.Frame(act_wrap, bg=CARD_BG, relief=tk.SOLID, bd=1)
-        act_frame.pack(fill=tk.X)
+        self._actif_frame = tk.Frame(act_wrap, bg=CARD_BG, relief=tk.SOLID, bd=1)
+        self._actif_frame.pack(fill=tk.X)
 
-        self._actifs_vars = {}
-        for i, (key, label) in enumerate(ACTIFS_FIELDS):
-            if i > 0:
-                tk.Frame(act_frame, bg=BORDER, height=1).pack(fill=tk.X, padx=8)
-            rf = tk.Frame(act_frame, bg=CARD_BG, padx=8, pady=4)
-            rf.pack(fill=tk.X)
-            tk.Label(rf, text=label, bg=CARD_BG, font=("Segoe UI", 10),
-                     fg="#333", width=20, anchor="w").pack(side=tk.LEFT)
-            var = tk.StringVar(value=f"{actifs_data.get(key, 0.0):.2f}")
-            self._actifs_vars[key] = var
-            e = tk.Entry(rf, textvariable=var, font=("Segoe UI", 10),
-                         relief=tk.FLAT, width=14, justify=tk.RIGHT,
-                         bg=LOCK_BG if locked else CARD_BG,
-                         fg=LOCK_FG if locked else "#333",
-                         state=tk.DISABLED if locked else tk.NORMAL,
-                         disabledbackground=LOCK_BG, disabledforeground=LOCK_FG,
-                         highlightthickness=1,
-                         highlightbackground=LOCK_BG if locked else BORDER)
-            e.pack(side=tk.LEFT, padx=4, ipady=4)
-            tk.Label(rf, text="€", bg=CARD_BG, font=("Segoe UI", 10),
-                     fg="#555").pack(side=tk.LEFT)
-            var.trace_add("write", lambda *_: self._recalculate())
+        self._actif_rows = []
+        for a in actifs_data:
+            self._add_actif(a.get("label", ""), a.get("montant", 0.0))
+
+        tk.Button(act_wrap, text="+ Ajouter un actif", bg=BG, fg=ADD_FG,
+                  font=("Segoe UI", 9), relief=tk.FLAT, cursor="hand2",
+                  activebackground="#DCE0E5", pady=2,
+                  state=tk.DISABLED if locked else tk.NORMAL,
+                  command=self._add_actif).pack(anchor="w", pady=(2, 0))
 
         act_foot = tk.Frame(act_wrap, bg=FOOT_BG, padx=8, pady=4)
         act_foot.pack(fill=tk.X)
@@ -297,6 +284,49 @@ class UIBuildMixin:
 
     def _delete_dette(self, row_frame):
         self._dette_rows = [r for r in self._dette_rows if r["frame"] is not row_frame]
+        row_frame.destroy()
+        self._recalculate()
+
+    def _add_actif(self, label="", montant=0.0):
+        locked = self._is_locked()
+        rf = tk.Frame(self._actif_frame, bg=CARD_BG)
+        rf.pack(fill=tk.X)
+        if self._actif_rows:
+            tk.Frame(rf, bg=BORDER, height=1).pack(fill=tk.X)
+        inner = tk.Frame(rf, bg=CARD_BG, padx=8, pady=3)
+        inner.pack(fill=tk.X)
+
+        lbl_var  = tk.StringVar(value=label)
+        mont_var = tk.StringVar(value=f"{montant:.2f}")
+
+        def _e(parent, var, width, right=False):
+            return tk.Entry(parent, textvariable=var, font=("Segoe UI", 10),
+                            relief=tk.FLAT, width=width,
+                            justify=tk.RIGHT if right else tk.LEFT,
+                            bg=LOCK_BG if locked else CARD_BG,
+                            fg=LOCK_FG if locked else "#333",
+                            state=tk.DISABLED if locked else tk.NORMAL,
+                            disabledbackground=LOCK_BG, disabledforeground=LOCK_FG,
+                            highlightthickness=1,
+                            highlightbackground=LOCK_BG if locked else BORDER)
+
+        _e(inner, lbl_var, 22).pack(side=tk.LEFT, padx=(0, 4), ipady=4)
+        _e(inner, mont_var, 14, right=True).pack(side=tk.LEFT, padx=2, ipady=4)
+        tk.Label(inner, text="€", bg=CARD_BG, font=("Segoe UI", 10),
+                 fg="#555").pack(side=tk.LEFT, padx=(2, 6))
+        tk.Button(inner, text="✕", bg=CARD_BG, fg="#C0392B",
+                  font=("Segoe UI", 9), relief=tk.FLAT, cursor="hand2",
+                  activebackground="#FADBD8", bd=0,
+                  state=tk.DISABLED if locked else tk.NORMAL,
+                  command=lambda f=rf: self._delete_actif(f)
+                  ).pack(side=tk.LEFT, padx=(4, 0))
+
+        mont_var.trace_add("write", lambda *_: self._recalculate())
+        self._actif_rows.append({"frame": rf, "label": lbl_var, "montant": mont_var})
+        self._recalculate()
+
+    def _delete_actif(self, row_frame):
+        self._actif_rows = [r for r in self._actif_rows if r["frame"] is not row_frame]
         row_frame.destroy()
         self._recalculate()
 

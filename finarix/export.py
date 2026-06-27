@@ -29,8 +29,10 @@ def export_html(payload, year, month, is_bilan):
     si   = payload["solde_initial"]
     sf   = si + epg
 
-    actifs = payload.get("actifs", {})
-    ta     = sum(actifs.values())
+    actifs_list = payload.get("actifs", [])
+    if isinstance(actifs_list, dict):  # legacy format
+        actifs_list = [{"label": k, "montant": v} for k, v in actifs_list.items()]
+    ta = sum(a["montant"] for a in actifs_list)
     dettes = payload.get("dettes", [])
     td     = sum(d["montant"] for d in dettes)
     pat    = ta - td
@@ -51,6 +53,10 @@ def export_html(payload, year, month, is_bilan):
         note_html = (f"<h3>Notes</h3>"
                      f"<p style='white-space:pre-wrap'>{note_val}</p>")
 
+    actifs_rows = "".join(
+        f"<tr><td>{a['label']}</td>"
+        f"<td style='text-align:right'>{fmt(a['montant'])}</td></tr>"
+        for a in actifs_list)
     dettes_rows = "".join(
         f"<tr><td>{d['label']}</td>"
         f"<td style='text-align:right'>{fmt(d['montant'])}</td></tr>"
@@ -97,10 +103,7 @@ def export_html(payload, year, month, is_bilan):
 
 <div class="pat-box">
   <h3 class="pat" style="margin-top:0">Patrimoine</h3>
-  <table>
-    <tr><td>Compte bancaire</td><td style="text-align:right">{fmt(actifs.get('compte',0))}</td></tr>
-    <tr><td>Tricount</td><td style="text-align:right">{fmt(actifs.get('tricount',0))}</td></tr>
-    <tr><td>eToro</td><td style="text-align:right">{fmt(actifs.get('etoro',0))}</td></tr>
+  <table>{actifs_rows}
     <tr class="tot"><td>Total actifs</td><td style="text-align:right;color:{color(ta)}">{fmt(ta)}</td></tr>
   </table>
   <table>{dettes_rows}
