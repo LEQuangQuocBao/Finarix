@@ -3,9 +3,10 @@ import tkinter as tk
 from finarix.config import (
     BG, CARD_BG, HDR_BG, HDR_FG, ACCENT,
     LOCK_BG, LOCK_FG, BORDER, FOOT_BG, SOLDE_BG, ADD_FG,
-    GREEN, RED, SECTION_COLORS, SECTION_TITLES, DEFAULT_DATA,
+    GREEN, RED, SECTION_COLORS, DEFAULT_DATA,
 )
 from finarix.finance import to_float
+from finarix import i18n
 
 
 class UIBuildMixin:
@@ -15,6 +16,7 @@ class UIBuildMixin:
     def _build_ui(self):
         top = tk.Frame(self, bg=HDR_BG, padx=10, pady=7)
         top.pack(fill=tk.X)
+
         nav = tk.Frame(top, bg=HDR_BG)
         nav.pack(side=tk.LEFT)
         tk.Button(nav, text="◀", bg=HDR_BG, fg=HDR_FG, relief=tk.FLAT,
@@ -29,14 +31,27 @@ class UIBuildMixin:
                   font=("Segoe UI", 12, "bold"), activebackground="#111e28",
                   activeforeground=HDR_FG, cursor="hand2", bd=0,
                   command=self._go_next).pack(side=tk.LEFT, padx=(5, 0))
+
         self._lbl_mode = tk.Label(top, text="", font=("Segoe UI", 9, "bold"),
                                   fg=HDR_FG, bg=HDR_BG, padx=14, pady=4,
                                   relief=tk.GROOVE)
         self._lbl_mode.pack(side=tk.RIGHT, padx=6)
 
+        lang_frame = tk.Frame(top, bg=HDR_BG)
+        lang_frame.pack(side=tk.RIGHT, padx=10)
+        for code, label in i18n.LANGS:
+            active = i18n.get_lang() == code
+            tk.Button(lang_frame, text=label,
+                      bg=ACCENT if active else HDR_BG, fg=HDR_FG,
+                      font=("Segoe UI", 9, "bold"), relief=tk.FLAT,
+                      padx=10, pady=2, cursor="hand2",
+                      activebackground=ACCENT, activeforeground=HDR_FG, bd=0,
+                      command=lambda c=code: self._change_lang(c)
+                      ).pack(side=tk.LEFT, padx=1)
+
         sb = tk.Frame(self, bg=SOLDE_BG, padx=14, pady=7)
         sb.pack(fill=tk.X)
-        tk.Label(sb, text="Solde début de mois :", bg=SOLDE_BG,
+        tk.Label(sb, text=i18n.t("solde_debut"), bg=SOLDE_BG,
                  font=("Segoe UI", 10, "bold"), fg="#1A5276").pack(side=tk.LEFT)
         self._solde_var = tk.StringVar(value="0.00")
         self._solde_entry = tk.Entry(sb, textvariable=self._solde_var,
@@ -47,7 +62,7 @@ class UIBuildMixin:
         tk.Label(sb, text="€", bg=SOLDE_BG, font=("Segoe UI", 10),
                  fg="#555").pack(side=tk.LEFT, padx=(0, 30))
         self._solde_var.trace_add("write", lambda *_: self._recalculate())
-        tk.Label(sb, text="Solde fin de mois :", bg=SOLDE_BG,
+        tk.Label(sb, text=i18n.t("solde_fin"), bg=SOLDE_BG,
                  font=("Segoe UI", 10, "bold"), fg="#1A5276").pack(side=tk.LEFT)
         self._lbl_solde_final = tk.Label(sb, text="0,00 €", bg=SOLDE_BG,
                                          font=("Segoe UI", 13, "bold"), fg="#222")
@@ -56,9 +71,9 @@ class UIBuildMixin:
         sumbar = tk.Frame(self, bg=BG, pady=6)
         sumbar.pack(fill=tk.X, padx=12)
         sumbar.columnconfigure((0, 1, 2), weight=1, uniform="card")
-        self._card_rev = self._make_card(sumbar, "Revenus",  0)
-        self._card_dep = self._make_card(sumbar, "Dépenses", 1)
-        self._card_epg = self._make_card(sumbar, "Épargne",  2)
+        self._card_rev = self._make_card(sumbar, i18n.t("card_revenus"),  0)
+        self._card_dep = self._make_card(sumbar, i18n.t("card_depenses"), 1)
+        self._card_epg = self._make_card(sumbar, i18n.t("card_epargne"),  2)
 
         outer = tk.Frame(self, bg=BG)
         outer.pack(fill=tk.BOTH, expand=True, padx=12, pady=(0, 4))
@@ -80,25 +95,25 @@ class UIBuildMixin:
 
         bot = tk.Frame(self, bg="#E8EAED", pady=7)
         bot.pack(fill=tk.X, side=tk.BOTTOM)
-        tk.Button(bot, text="  Exporter PDF  ", bg="#566573", fg="white",
+        tk.Button(bot, text=i18n.t("btn_pdf"), bg="#566573", fg="white",
                   font=("Segoe UI", 10), relief=tk.FLAT, padx=14, pady=5,
                   activebackground="#424949", cursor="hand2",
                   command=self._export_html).pack(side=tk.LEFT, padx=(12, 4))
-        tk.Button(bot, text="  Sauvegarder données  ", bg="#6C3483", fg="white",
+        tk.Button(bot, text=i18n.t("btn_save_data"), bg="#6C3483", fg="white",
                   font=("Segoe UI", 10), relief=tk.FLAT, padx=14, pady=5,
                   activebackground="#512E5F", cursor="hand2",
                   command=self._export_data).pack(side=tk.LEFT, padx=4)
-        tk.Button(bot, text="  Restaurer données  ", bg="#1A5276", fg="white",
+        tk.Button(bot, text=i18n.t("btn_restore_data"), bg="#1A5276", fg="white",
                   font=("Segoe UI", 10), relief=tk.FLAT, padx=14, pady=5,
                   activebackground="#154360", cursor="hand2",
                   command=self._import_data).pack(side=tk.LEFT, padx=4)
-        self._btn_modifier = tk.Button(bot, text="  Modifier  ",
+        self._btn_modifier = tk.Button(bot, text=i18n.t("btn_modifier"),
                                        bg="#F39C12", fg="white",
                                        font=("Segoe UI", 10, "bold"),
                                        relief=tk.FLAT, padx=18, pady=5,
                                        activebackground="#D68910", cursor="hand2",
                                        command=self._on_modifier_click)
-        self._btn_save = tk.Button(bot, text="  Enregistrer  ",
+        self._btn_save = tk.Button(bot, text=i18n.t("btn_enregistrer"),
                                    bg=ACCENT, fg="white",
                                    font=("Segoe UI", 10, "bold"),
                                    relief=tk.FLAT, padx=18, pady=5,
@@ -137,8 +152,8 @@ class UIBuildMixin:
         ch = tk.Frame(self._body, bg=BG)
         ch.pack(fill=tk.X, padx=4, pady=(10, 0))
         tk.Label(ch, text="", bg=BG, width=26).pack(side=tk.LEFT)
-        for t in ("Prévoir (€)", "Réel (€)"):
-            tk.Label(ch, text=t, bg=BG, fg="#666",
+        for lbl in (i18n.t("col_prevoir"), i18n.t("col_reel")):
+            tk.Label(ch, text=lbl, bg=BG, fg="#666",
                      font=("Segoe UI", 9, "bold"), width=13,
                      anchor="center").pack(side=tk.LEFT, padx=2)
 
@@ -149,7 +164,7 @@ class UIBuildMixin:
                               item.get("prevoir", 0.0), item.get("reel", 0.0))
 
         locked = self._is_locked()
-        nf = tk.LabelFrame(self._body, text=" Notes ", bg=BG,
+        nf = tk.LabelFrame(self._body, text=i18n.t("notes"), bg=BG,
                            font=("Segoe UI", 9, "bold"), fg="#555",
                            padx=6, pady=4, relief=tk.GROOVE, bd=1)
         nf.pack(fill=tk.X, pady=(10, 4))
@@ -176,13 +191,14 @@ class UIBuildMixin:
 
         hdr = tk.Frame(pat_wrap, bg="#17202A", padx=10, pady=6)
         hdr.pack(fill=tk.X)
-        tk.Label(hdr, text="Tổng tài sản — Patrimoine", bg="#17202A", fg="white",
+        tk.Label(hdr, text=i18n.t("pat_titre"), bg="#17202A", fg="white",
                  font=("Segoe UI", 10, "bold")).pack(side=tk.LEFT)
 
+        # ── actifs ────────────────────────────────────────────────────────────
         act_wrap = tk.Frame(pat_wrap, bg=BG)
         act_wrap.pack(fill=tk.X, pady=(4, 0))
         tk.Frame(act_wrap, bg="#1A5276", padx=8, pady=4).pack(fill=tk.X)
-        tk.Label(act_wrap.winfo_children()[-1], text="Actifs",
+        tk.Label(act_wrap.winfo_children()[-1], text=i18n.t("pat_actifs"),
                  bg="#1A5276", fg="white",
                  font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
 
@@ -193,7 +209,7 @@ class UIBuildMixin:
         for a in actifs_data:
             self._add_actif(a.get("label", ""), a.get("montant", 0.0))
 
-        tk.Button(act_wrap, text="+ Ajouter un actif", bg=BG, fg=ADD_FG,
+        tk.Button(act_wrap, text=i18n.t("btn_add_actif"), bg=BG, fg=ADD_FG,
                   font=("Segoe UI", 9), relief=tk.FLAT, cursor="hand2",
                   activebackground="#DCE0E5", pady=2,
                   state=tk.DISABLED if locked else tk.NORMAL,
@@ -201,16 +217,17 @@ class UIBuildMixin:
 
         act_foot = tk.Frame(act_wrap, bg=FOOT_BG, padx=8, pady=4)
         act_foot.pack(fill=tk.X)
-        tk.Label(act_foot, text="Total actifs :", bg=FOOT_BG,
+        tk.Label(act_foot, text=i18n.t("pat_total_actifs"), bg=FOOT_BG,
                  font=("Segoe UI", 9, "bold"), fg="#555").pack(side=tk.LEFT)
         self._lbl_total_actifs = tk.Label(act_foot, text="0,00 €", bg=FOOT_BG,
                                           font=("Segoe UI", 9, "bold"), fg=GREEN)
         self._lbl_total_actifs.pack(side=tk.LEFT, padx=6)
 
+        # ── dettes ────────────────────────────────────────────────────────────
         det_wrap = tk.Frame(pat_wrap, bg=BG)
         det_wrap.pack(fill=tk.X, pady=(6, 0))
         tk.Frame(det_wrap, bg="#7B241C", padx=8, pady=4).pack(fill=tk.X)
-        tk.Label(det_wrap.winfo_children()[-1], text="Dettes",
+        tk.Label(det_wrap.winfo_children()[-1], text=i18n.t("pat_dettes"),
                  bg="#7B241C", fg="white",
                  font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
 
@@ -223,13 +240,13 @@ class UIBuildMixin:
 
         det_foot = tk.Frame(det_wrap, bg=FOOT_BG, padx=8, pady=4)
         det_foot.pack(fill=tk.X)
-        tk.Label(det_foot, text="Total dettes :", bg=FOOT_BG,
+        tk.Label(det_foot, text=i18n.t("pat_total_dettes"), bg=FOOT_BG,
                  font=("Segoe UI", 9, "bold"), fg="#555").pack(side=tk.LEFT)
         self._lbl_total_dettes = tk.Label(det_foot, text="0,00 €", bg=FOOT_BG,
                                           font=("Segoe UI", 9, "bold"), fg=RED)
         self._lbl_total_dettes.pack(side=tk.LEFT, padx=6)
 
-        tk.Button(det_wrap, text="+ Ajouter une dette", bg=BG, fg=ADD_FG,
+        tk.Button(det_wrap, text=i18n.t("btn_add_dette"), bg=BG, fg=ADD_FG,
                   font=("Segoe UI", 9), relief=tk.FLAT, cursor="hand2",
                   activebackground="#DCE0E5", pady=2,
                   state=tk.DISABLED if locked else tk.NORMAL,
@@ -237,7 +254,7 @@ class UIBuildMixin:
 
         pat_net = tk.Frame(pat_wrap, bg="#1E2D3D", padx=12, pady=8)
         pat_net.pack(fill=tk.X, pady=(8, 0))
-        tk.Label(pat_net, text="Patrimoine net :", bg="#1E2D3D", fg="#AAA",
+        tk.Label(pat_net, text=i18n.t("pat_net"), bg="#1E2D3D", fg="#AAA",
                  font=("Segoe UI", 10)).pack(side=tk.LEFT)
         self._lbl_patrimoine_net = tk.Label(pat_net, text="0,00 €",
                                             bg="#1E2D3D", fg="white",
@@ -337,20 +354,20 @@ class UIBuildMixin:
         wrap.pack(fill=tk.X, pady=4)
         hdr = tk.Frame(wrap, bg=color, padx=8, pady=5)
         hdr.pack(fill=tk.X)
-        tk.Label(hdr, text=SECTION_TITLES[key], bg=color, fg="white",
+        tk.Label(hdr, text=i18n.t(f"sec_{key}"), bg=color, fg="white",
                  font=("Segoe UI", 10, "bold")).pack(side=tk.LEFT)
         rows = tk.Frame(wrap, bg=CARD_BG, relief=tk.SOLID, bd=1)
         rows.pack(fill=tk.X)
         self._section_frames[key] = rows
         foot = tk.Frame(wrap, bg=FOOT_BG, padx=8, pady=4)
         foot.pack(fill=tk.X)
-        tk.Label(foot, text="Total :", bg=FOOT_BG,
+        tk.Label(foot, text=i18n.t("section_total"), bg=FOOT_BG,
                  font=("Segoe UI", 9, "bold"), fg="#555").pack(side=tk.LEFT)
         tot = tk.Label(foot, text="0,00 €", bg=FOOT_BG,
                        font=("Segoe UI", 9, "bold"), fg="#222")
         tot.pack(side=tk.LEFT, padx=6)
         self._section_total_labels[key] = tot
-        tk.Button(wrap, text="+ Ajouter une ligne", bg=BG, fg=ADD_FG,
+        tk.Button(wrap, text=i18n.t("btn_add_row"), bg=BG, fg=ADD_FG,
                   font=("Segoe UI", 9), relief=tk.FLAT, cursor="hand2",
                   activebackground="#DCE0E5", pady=2,
                   state=tk.DISABLED if locked else tk.NORMAL,

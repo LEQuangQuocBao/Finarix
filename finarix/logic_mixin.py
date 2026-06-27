@@ -4,9 +4,10 @@ from tkinter import filedialog, messagebox
 
 from finarix.config import (
     BG, CARD_BG, LOCK_BG, LOCK_FG, HDR_FG,
-    GREEN, RED, MONTHS_FR, DEFAULT_DATA,
+    GREEN, RED, DEFAULT_DATA,
 )
 from finarix.storage import load_month_file, save_month_file, next_ym, prev_ym, data_dir, get_key
+from finarix import i18n
 from finarix.finance import to_float, compute_solde_final
 from finarix import export
 from finarix.dialogs.forward import ApplyForwardDialog
@@ -142,11 +143,11 @@ class AppLogicMixin:
 
     def _update_header(self):
         self._lbl_month.config(
-            text=f"{MONTHS_FR[self.view_month]} {self.view_year}")
+            text=f"{i18n.months()[self.view_month]} {self.view_year}")
         if self._is_bilan():
-            self._lbl_mode.config(text="  Bilan  ",     bg="#1A5276", fg=HDR_FG)
+            self._lbl_mode.config(text=i18n.t("mode_bilan"),    bg="#1A5276", fg=HDR_FG)
         else:
-            self._lbl_mode.config(text="  Prévision  ", bg="#784212", fg=HDR_FG)
+            self._lbl_mode.config(text=i18n.t("mode_prevision"),bg="#784212", fg=HDR_FG)
 
     def _recalculate(self):
         def totals(key):
@@ -208,36 +209,44 @@ class AppLogicMixin:
 
     def _export_data(self):
         path = filedialog.asksaveasfilename(
-            title="Sauvegarder toutes les données",
+            title=i18n.t("dlg_backup_title"),
             defaultextension=".zip",
-            filetypes=[("Archive ZIP", "*.zip")],
-            initialfile="Finarix_sauvegarde.zip",
+            filetypes=[(i18n.t("ft_zip"), "*.zip")],
+            initialfile=i18n.t("dlg_backup_file"),
         )
         if not path:
             return
         try:
             n = export.export_data_zip(get_key(), data_dir(), path)
-            messagebox.showinfo("Sauvegarde réussie",
-                                f"{n} mois exportés vers :\n{path}")
+            messagebox.showinfo(i18n.t("dlg_backup_ok"),
+                                i18n.t("dlg_backup_msg").format(n=n, path=path))
         except Exception as e:
-            messagebox.showerror("Erreur", str(e))
+            messagebox.showerror(i18n.t("dlg_error"), str(e))
 
     def _import_data(self):
         path = filedialog.askopenfilename(
-            title="Restaurer les données",
-            filetypes=[("Archive ZIP", "*.zip")],
+            title=i18n.t("dlg_restore_title"),
+            filetypes=[(i18n.t("ft_zip"), "*.zip")],
         )
         if not path:
             return
-        if not messagebox.askyesno(
-            "Confirmer la restauration",
-            "Les données existantes seront remplacées.\n\nContinuer ?",
-        ):
+        if not messagebox.askyesno(i18n.t("dlg_confirm_title"),
+                                    i18n.t("dlg_confirm_msg")):
             return
         try:
             n = export.import_data_zip(get_key(), path, data_dir())
-            messagebox.showinfo("Restauration réussie",
-                                f"{n} mois importés.")
+            messagebox.showinfo(i18n.t("dlg_restore_ok"),
+                                i18n.t("dlg_restore_msg").format(n=n))
             self._load_month()
         except Exception as e:
-            messagebox.showerror("Erreur", str(e))
+            messagebox.showerror(i18n.t("dlg_error"), str(e))
+
+    def _change_lang(self, lang: str):
+        if i18n.get_lang() == lang:
+            return
+        i18n.set_lang(lang)
+        i18n.save_lang(data_dir())
+        for w in self.winfo_children():
+            w.destroy()
+        self._build_ui()
+        self._load_month()

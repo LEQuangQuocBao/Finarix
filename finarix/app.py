@@ -4,7 +4,7 @@ from datetime import date
 from finarix.config import BG
 from finarix.ui_mixin import UIBuildMixin
 from finarix.logic_mixin import AppLogicMixin
-from finarix import storage
+from finarix import storage, i18n
 from finarix.dialogs.login import LoginDialog
 
 
@@ -12,6 +12,9 @@ class FinanceApp(UIBuildMixin, AppLogicMixin, tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         self.withdraw()  # hide until login succeeds
+
+        # Load language preference before showing login dialog
+        i18n.load_lang(storage.data_dir())
 
         key = LoginDialog(self).run()
         if key is None:

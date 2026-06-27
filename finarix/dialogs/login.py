@@ -2,7 +2,7 @@ import tkinter as tk
 
 from finarix.config import BG, CARD_BG, ACCENT, HDR_BG, HDR_FG, RED
 from finarix.storage import data_dir
-from finarix import auth
+from finarix import auth, i18n
 
 
 class LoginDialog:
@@ -62,12 +62,12 @@ class LoginDialog:
     # ── login mode ────────────────────────────────────────────────────────────
 
     def _build_login(self):
-        self._header("Entrez votre mot de passe pour accéder à vos données")
+        self._header(i18n.t("login_subtitle"))
         body = tk.Frame(self._win, bg=BG, padx=28, pady=12)
         body.pack(fill=tk.BOTH, expand=True)
 
         self._pw_var = tk.StringVar()
-        e = self._pw_field(body, "Mot de passe", self._pw_var,
+        e = self._pw_field(body, i18n.t("lbl_password"), self._pw_var,
                            on_return=self._do_login)
         e.focus_set()
 
@@ -75,7 +75,7 @@ class LoginDialog:
                                   font=("Segoe UI", 9))
         self._err_lbl.pack(anchor="w", pady=(8, 0))
 
-        tk.Button(body, text="  Se connecter  ", bg=ACCENT, fg="white",
+        tk.Button(body, text=i18n.t("btn_login"), bg=ACCENT, fg="white",
                   font=("Segoe UI", 11, "bold"), relief=tk.FLAT,
                   padx=20, pady=8, cursor="hand2",
                   activebackground="#1f638d",
@@ -84,11 +84,11 @@ class LoginDialog:
     def _do_login(self):
         pw = self._pw_var.get()
         if not pw:
-            self._err_lbl.config(text="Veuillez entrer votre mot de passe.")
+            self._err_lbl.config(text=i18n.t("err_empty_pw"))
             return
         key = auth.verify_password(pw, self._ddir)
         if key is None:
-            self._err_lbl.config(text="Mot de passe incorrect.")
+            self._err_lbl.config(text=i18n.t("err_wrong_pw"))
             self._pw_var.set("")
             return
         self._key = key
@@ -97,23 +97,23 @@ class LoginDialog:
     # ── first-time setup mode ─────────────────────────────────────────────────
 
     def _build_setup(self):
-        self._header("Première connexion — créez votre mot de passe")
+        self._header(i18n.t("setup_subtitle"))
         body = tk.Frame(self._win, bg=BG, padx=28, pady=12)
         body.pack(fill=tk.BOTH, expand=True)
 
         self._pw_var  = tk.StringVar()
         self._pw2_var = tk.StringVar()
 
-        e1 = self._pw_field(body, "Nouveau mot de passe", self._pw_var)
+        e1 = self._pw_field(body, i18n.t("lbl_new_pw"), self._pw_var)
         e1.focus_set()
-        self._pw_field(body, "Confirmer le mot de passe", self._pw2_var,
+        self._pw_field(body, i18n.t("lbl_confirm_pw"), self._pw2_var,
                        on_return=self._do_setup)
 
         self._err_lbl = tk.Label(body, text="", bg=BG, fg=RED,
                                   font=("Segoe UI", 9))
         self._err_lbl.pack(anchor="w", pady=(8, 0))
 
-        tk.Button(body, text="  Créer le compte  ", bg="#27AE60", fg="white",
+        tk.Button(body, text=i18n.t("btn_create_acc"), bg="#27AE60", fg="white",
                   font=("Segoe UI", 11, "bold"), relief=tk.FLAT,
                   padx=20, pady=8, cursor="hand2",
                   activebackground="#1E8449",
@@ -123,15 +123,13 @@ class LoginDialog:
         pw  = self._pw_var.get()
         pw2 = self._pw2_var.get()
         if not pw:
-            self._err_lbl.config(text="Le mot de passe ne peut pas être vide.")
+            self._err_lbl.config(text=i18n.t("err_empty_new_pw"))
             return
         if len(pw) < 4:
-            self._err_lbl.config(
-                text="Mot de passe trop court (minimum 4 caractères).")
+            self._err_lbl.config(text=i18n.t("err_short_pw"))
             return
         if pw != pw2:
-            self._err_lbl.config(
-                text="Les mots de passe ne correspondent pas.")
+            self._err_lbl.config(text=i18n.t("err_pw_mismatch"))
             return
         key = auth.setup_password(pw, self._ddir)
         auth.migrate_existing_files(key, self._ddir)

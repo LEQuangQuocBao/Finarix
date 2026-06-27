@@ -1,6 +1,3 @@
-MONTHS_FR = ['','Janvier','Février','Mars','Avril','Mai','Juin',
-             'Juillet','Août','Septembre','Octobre','Novembre','Décembre']
-
 DEFAULT_DATA = {
     "solde_initial": 0.0,
     "actifs":   [{"label": "Compte bancaire", "montant": 0.0},
@@ -36,4 +33,3 @@ SOLDE_BG = "#EBF5FB"
 ADD_FG   = "#555555"
 
 SECTION_COLORS = {"revenu": "#1A5276", "fixe": "#145A32", "variable": "#784212"}
-SECTION_TITLES = {"revenu": "Revenus", "fixe": "Dépenses fixes", "variable": "Dépenses variables"}

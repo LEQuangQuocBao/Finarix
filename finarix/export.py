@@ -5,13 +5,13 @@ import tempfile
 import webbrowser
 import zipfile
 
-from finarix.config import MONTHS_FR
+from finarix import i18n
 
 
 def export_html(payload, year, month, is_bilan):
-    field    = "reel" if is_bilan else "prevoir"
-    mode_lbl = "Bilan" if is_bilan else "Prévision"
-    month_lbl = f"{MONTHS_FR[month]} {year}"
+    field     = "reel" if is_bilan else "prevoir"
+    mode_lbl  = i18n.t("html_bilan") if is_bilan else i18n.t("html_prevision")
+    month_lbl = f"{i18n.months()[month]} {year}"
 
     def fmt(v):
         s = "-" if v < 0 else ""
@@ -50,7 +50,7 @@ def export_html(payload, year, month, is_bilan):
     note_html = ""
     note_val  = payload.get("note", "")
     if note_val:
-        note_html = (f"<h3>Notes</h3>"
+        note_html = (f"<h3>{i18n.t('html_notes')}</h3>"
                      f"<p style='white-space:pre-wrap'>{note_val}</p>")
 
     actifs_rows = "".join(
@@ -64,7 +64,7 @@ def export_html(payload, year, month, is_bilan):
 
     html = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8">
-<title>Finance {month_lbl}</title>
+<title>Finarix {month_lbl}</title>
 <style>
   body{{font-family:'Segoe UI',sans-serif;max-width:720px;margin:0 auto;padding:20px;color:#222}}
   h1{{background:#1E2D3D;color:#fff;padding:12px 20px;border-radius:4px;display:flex;align-items:center;gap:14px}}
@@ -88,41 +88,41 @@ def export_html(payload, year, month, is_bilan):
 <h1>Finarix — {month_lbl} <span class="badge">{mode_lbl}</span></h1>
 
 <div class="summary">
-  <div class="card"><div class="t">Revenus</div>
+  <div class="card"><div class="t">{i18n.t('html_revenus')}</div>
     <div class="v" style="color:{color(rev)}">{fmt(rev)}</div></div>
-  <div class="card"><div class="t">Dépenses</div>
+  <div class="card"><div class="t">{i18n.t('html_depenses')}</div>
     <div class="v" style="color:{color(dep, invert=True)}">{fmt(dep)}</div></div>
-  <div class="card"><div class="t">Épargne</div>
+  <div class="card"><div class="t">{i18n.t('html_epargne')}</div>
     <div class="v" style="color:{color(epg)}">{fmt(epg)}</div></div>
 </div>
 
 <div class="solde-bar">
-  <span>Solde début : <b style="color:{color(si)}">{fmt(si)}</b></span>
-  <span>Solde fin : <b style="color:{color(sf)}">{fmt(sf)}</b></span>
+  <span>{i18n.t('html_solde_debut')} <b style="color:{color(si)}">{fmt(si)}</b></span>
+  <span>{i18n.t('html_solde_fin')} <b style="color:{color(sf)}">{fmt(sf)}</b></span>
 </div>
 
 <div class="pat-box">
-  <h3 class="pat" style="margin-top:0">Patrimoine</h3>
+  <h3 class="pat" style="margin-top:0">{i18n.t('html_patrimoine')}</h3>
   <table>{actifs_rows}
-    <tr class="tot"><td>Total actifs</td><td style="text-align:right;color:{color(ta)}">{fmt(ta)}</td></tr>
+    <tr class="tot"><td>{i18n.t('html_total_actifs')}</td><td style="text-align:right;color:{color(ta)}">{fmt(ta)}</td></tr>
   </table>
   <table>{dettes_rows}
-    <tr class="tot"><td>Total dettes</td><td style="text-align:right;color:#E74C3C">{fmt(td)}</td></tr>
+    <tr class="tot"><td>{i18n.t('html_total_dettes')}</td><td style="text-align:right;color:#E74C3C">{fmt(td)}</td></tr>
   </table>
-  <div class="pat-net" style="color:{color(pat)}">Patrimoine net : {fmt(pat)}</div>
+  <div class="pat-net" style="color:{color(pat)}">{i18n.t('html_pat_net')} {fmt(pat)}</div>
 </div>
 
-<h3>Revenus</h3>
+<h3>{i18n.t('html_sec_revenu')}</h3>
 <table>{rows_html(payload['revenu'])}
-<tr class="tot"><td>Total</td><td style="text-align:right">{fmt(rev)}</td></tr></table>
+<tr class="tot"><td>{i18n.t('html_total')}</td><td style="text-align:right">{fmt(rev)}</td></tr></table>
 
-<h3 class="fixe">Dépenses fixes</h3>
+<h3 class="fixe">{i18n.t('html_sec_fixe')}</h3>
 <table>{rows_html(payload['fixe'])}
-<tr class="tot"><td>Total</td><td style="text-align:right">{fmt(fix)}</td></tr></table>
+<tr class="tot"><td>{i18n.t('html_total')}</td><td style="text-align:right">{fmt(fix)}</td></tr></table>
 
-<h3 class="var">Dépenses variables</h3>
+<h3 class="var">{i18n.t('html_sec_variable')}</h3>
 <table>{rows_html(payload['variable'])}
-<tr class="tot"><td>Total</td><td style="text-align:right">{fmt(var)}</td></tr></table>
+<tr class="tot"><td>{i18n.t('html_total')}</td><td style="text-align:right">{fmt(var)}</td></tr></table>
 
 {note_html}
 <p style="color:#bbb;font-size:11px;margin-top:40px">Finarix</p>

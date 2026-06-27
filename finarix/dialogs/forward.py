@@ -3,9 +3,10 @@ import tkinter as tk
 
 from finarix.config import (
     BG, CARD_BG, BORDER, ACCENT,
-    MONTHS_FR, SECTION_COLORS, SECTION_TITLES, DEFAULT_DATA,
+    SECTION_COLORS, DEFAULT_DATA,
 )
 from finarix.storage import load_month_file, save_month_file, next_ym
+from finarix import i18n
 
 
 class ApplyForwardDialog(tk.Toplevel):
@@ -15,7 +16,7 @@ class ApplyForwardDialog(tk.Toplevel):
         self.payload    = payload
         self.base_year  = base_year
         self.base_month = base_month
-        self.title("Appliquer aux mois suivants")
+        self.title(i18n.t("fwd_title"))
         self.geometry("500x600")
         self.minsize(460, 400)
         self.resizable(True, True)
@@ -27,10 +28,10 @@ class ApplyForwardDialog(tk.Toplevel):
         self.wait_window()
 
     def _build(self):
-        tk.Label(self, text="Appliquer aux mois suivants ?",
+        tk.Label(self, text=i18n.t("fwd_title"),
                  bg=BG, font=("Segoe UI", 12, "bold"), fg="#222"
                  ).pack(pady=(14, 2))
-        tk.Label(self, text="Cochez les lignes à copier dans les mois futurs :",
+        tk.Label(self, text=i18n.t("fwd_subtitle"),
                  bg=BG, font=("Segoe UI", 9), fg="#777"
                  ).pack(pady=(0, 6))
 
@@ -59,8 +60,8 @@ class ApplyForwardDialog(tk.Toplevel):
         misc.pack(fill=tk.X, pady=(8, 2))
         self._var_solde = tk.BooleanVar(value=False)
         self._var_note  = tk.BooleanVar(value=False)
-        for var, label in ((self._var_solde, "Solde de début de mois"),
-                           (self._var_note,  "Notes")):
+        for var, label in ((self._var_solde, i18n.t("fwd_solde")),
+                           (self._var_note,  i18n.t("fwd_notes"))):
             tk.Checkbutton(misc, text=label, variable=var, bg=CARD_BG,
                            font=("Segoe UI", 10), fg="#444",
                            activebackground=CARD_BG, anchor="w"
@@ -70,22 +71,23 @@ class ApplyForwardDialog(tk.Toplevel):
         bot.pack(fill=tk.X, side=tk.BOTTOM)
         uf = tk.Frame(bot, bg="#E8EAED")
         uf.pack(fill=tk.X, pady=(0, 8))
-        tk.Label(uf, text="Jusqu'au mois de :", bg="#E8EAED",
+        tk.Label(uf, text=i18n.t("fwd_until"), bg="#E8EAED",
                  font=("Segoe UI", 10, "bold"), fg="#333").pack(side=tk.LEFT)
         self._months_list = self._future_months()
         labels = [x[2] for x in self._months_list]
         self._until_var = tk.StringVar()
-        dec_lbl = f"Décembre {self.base_year}"
+        mnths = i18n.months()
+        dec_lbl = f"{mnths[12]} {self.base_year}"
         self._until_var.set(dec_lbl if dec_lbl in labels else labels[-1])
         om = tk.OptionMenu(uf, self._until_var, *labels)
         om.config(font=("Segoe UI", 10), bg=CARD_BG, relief=tk.SOLID, width=18)
         om.pack(side=tk.LEFT, padx=10)
         bf = tk.Frame(bot, bg="#E8EAED")
         bf.pack()
-        tk.Button(bf, text="Ignorer", bg="#BDC3C7", fg="#333",
+        tk.Button(bf, text=i18n.t("btn_ignore"), bg="#BDC3C7", fg="#333",
                   font=("Segoe UI", 10), relief=tk.FLAT, padx=16, pady=6,
                   cursor="hand2", command=self.destroy).pack(side=tk.LEFT, padx=6)
-        tk.Button(bf, text="  Appliquer  ", bg=ACCENT, fg="white",
+        tk.Button(bf, text=i18n.t("btn_apply"), bg=ACCENT, fg="white",
                   font=("Segoe UI", 10, "bold"), relief=tk.FLAT, padx=16, pady=6,
                   activebackground="#1f638d", cursor="hand2",
                   command=self._apply).pack(side=tk.LEFT, padx=6)
@@ -97,9 +99,9 @@ class ApplyForwardDialog(tk.Toplevel):
         wrap.pack(fill=tk.X, pady=(4, 0))
         hdr = tk.Frame(wrap, bg=color, padx=8, pady=4)
         hdr.pack(fill=tk.X)
-        tk.Label(hdr, text=SECTION_TITLES[key], bg=color, fg="white",
+        tk.Label(hdr, text=i18n.t(f"sec_{key}"), bg=color, fg="white",
                  font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
-        toggle_btn = tk.Button(hdr, text="Aucun", bg=color, fg="white",
+        toggle_btn = tk.Button(hdr, text=i18n.t("btn_none"), bg=color, fg="white",
                                font=("Segoe UI", 8), relief=tk.FLAT,
                                cursor="hand2", bd=0, padx=8,
                                activebackground=color, activeforeground="white")
@@ -126,17 +128,18 @@ class ApplyForwardDialog(tk.Toplevel):
         def _toggle(btn=toggle_btn, vlist=row_vars):
             all_on = all(v.get() for v in vlist)
             for v in vlist: v.set(not all_on)
-            btn.config(text="Tout" if all_on else "Aucun")
+            btn.config(text=i18n.t("btn_all") if all_on else i18n.t("btn_none"))
         toggle_btn.config(command=_toggle)
 
     def _mw(self, event):
         self._scr.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _future_months(self):
+        mnths  = i18n.months()
         result, y, m = [], *next_ym(self.base_year, self.base_month)
         end_y = self.base_year + 1
         while y < end_y or (y == end_y and m <= 12):
-            result.append((y, m, f"{MONTHS_FR[m]} {y}"))
+            result.append((y, m, f"{mnths[m]} {y}"))
             y, m = next_ym(y, m)
         return result
 
