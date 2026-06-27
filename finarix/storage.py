@@ -16,7 +16,9 @@ def get_key() -> bytes | None:
 
 def data_dir() -> str:
     if hasattr(sys, '_MEIPASS'):
-        base = os.path.dirname(sys.executable)
+        # Packaged exe: use %APPDATA%\Finarix so data survives reinstalls
+        base = os.path.join(
+            os.environ.get('APPDATA', os.path.expanduser('~')), 'Finarix')
     else:
         here = os.path.dirname(os.path.abspath(__file__))
         base = os.path.dirname(here)
