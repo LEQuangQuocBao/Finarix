@@ -44,6 +44,9 @@ class FinanceApp(UIBuildMixin, AppLogicMixin, tk.Tk):
         self._lbl_total_dettes     = None
         self._lbl_patrimoine_net   = None
         self._note_text            = None
+        self._compte_bc_var        = None
+        self._lbl_cb_calcule       = None
+        self._lbl_ecart            = None
 
         self._build_ui()
         self._load_month()

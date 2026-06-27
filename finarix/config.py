@@ -1,8 +1,8 @@
 DEFAULT_DATA = {
-    "solde_initial": 0.0,
-    "actifs":   [{"label": "Compte bancaire", "montant": 0.0},
-                 {"label": "Tricount",        "montant": 0.0},
-                 {"label": "eToro",           "montant": 0.0}],
+    "solde_initial":   0.0,
+    "compte_bancaire": 0.0,
+    "actifs":   [{"label": "Tricount", "montant": 0.0},
+                 {"label": "eToro",    "montant": 0.0}],
     "dettes":   [{"label": "Prêt immobilier", "montant": 0.0}],
     "revenu":   [{"label": "Salaire net",      "prevoir": 0.0, "reel": 0.0},
                  {"label": "Autres revenus",   "prevoir": 0.0, "reel": 0.0}],

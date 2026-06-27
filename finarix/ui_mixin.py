@@ -146,6 +146,9 @@ class UIBuildMixin:
         self._lbl_total_dettes     = None
         self._lbl_patrimoine_net   = None
         self._note_text            = None
+        self._compte_bc_var        = None
+        self._lbl_cb_calcule       = None
+        self._lbl_ecart            = None
 
         self._build_patrimoine(data)
 
@@ -185,6 +188,7 @@ class UIBuildMixin:
         actifs_data = data.get("actifs", DEFAULT_DATA["actifs"])
         dettes_data = data.get("dettes", [])
         locked = self._is_locked()
+        bilan  = self._is_bilan()
 
         pat_wrap = tk.Frame(self._body, bg=BG)
         pat_wrap.pack(fill=tk.X, pady=(4, 0))
@@ -193,6 +197,70 @@ class UIBuildMixin:
         hdr.pack(fill=tk.X)
         tk.Label(hdr, text=i18n.t("pat_titre"), bg="#17202A", fg="white",
                  font=("Segoe UI", 10, "bold")).pack(side=tk.LEFT)
+
+        # ── Compte bancaire ───────────────────────────────────────────────────
+        cb_wrap = tk.Frame(pat_wrap, bg=BG)
+        cb_wrap.pack(fill=tk.X, pady=(4, 0))
+
+        cb_hdr_f = tk.Frame(cb_wrap, bg="#1B4F72", padx=8, pady=4)
+        cb_hdr_f.pack(fill=tk.X)
+        tk.Label(cb_hdr_f, text=i18n.t("cb_titre"), bg="#1B4F72", fg="white",
+                 font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
+
+        cb_body = tk.Frame(cb_wrap, bg=CARD_BG, relief=tk.SOLID, bd=1, padx=10, pady=8)
+        cb_body.pack(fill=tk.X)
+
+        def _fmtv(v):
+            return (f"-{abs(v):,.2f} €" if v < 0 else f"{v:,.2f} €").replace(",", " ")
+
+        # Row 1: Début (solde_initial, always read-only)
+        r1 = tk.Frame(cb_body, bg=CARD_BG)
+        r1.pack(fill=tk.X, pady=(0, 4))
+        tk.Label(r1, text=i18n.t("cb_debut"), bg=CARD_BG, fg="#777",
+                 font=("Segoe UI", 9), width=22, anchor="w").pack(side=tk.LEFT)
+        si_val = data.get("solde_initial", 0.0)
+        tk.Label(r1, text=_fmtv(si_val), bg=CARD_BG, fg="#444",
+                 font=("Segoe UI", 10)).pack(side=tk.LEFT, padx=6)
+
+        # Row 2: Fin (editable in bilan edit mode, auto-label otherwise)
+        r2 = tk.Frame(cb_body, bg=CARD_BG)
+        r2.pack(fill=tk.X)
+        tk.Label(r2, text=i18n.t("cb_fin"), bg=CARD_BG, fg="#777",
+                 font=("Segoe UI", 9), width=22, anchor="w").pack(side=tk.LEFT)
+
+        cb_val = data.get("compte_bancaire", si_val)
+        self._compte_bc_var = tk.StringVar(value=f"{cb_val:.2f}")
+
+        if bilan and not locked:
+            e = tk.Entry(r2, textvariable=self._compte_bc_var,
+                         font=("Segoe UI", 10), relief=tk.SOLID, bd=1,
+                         width=14, justify=tk.RIGHT, bg=CARD_BG, fg="#222",
+                         highlightthickness=1, highlightbackground=BORDER)
+            e.pack(side=tk.LEFT, ipady=4, padx=(0, 4))
+            self._compte_bc_var.trace_add("write", lambda *_: self._recalculate())
+        else:
+            tk.Label(r2, textvariable=self._compte_bc_var,
+                     bg=LOCK_BG if locked else CARD_BG,
+                     fg=LOCK_FG if locked else "#444",
+                     font=("Segoe UI", 10)).pack(side=tk.LEFT, padx=6)
+        tk.Label(r2, text="€", bg=CARD_BG, fg="#555",
+                 font=("Segoe UI", 10)).pack(side=tk.LEFT)
+
+        # Row 3: Écart (bilan mode only)
+        if bilan:
+            tk.Frame(cb_body, bg=BORDER, height=1).pack(fill=tk.X, pady=(6, 0))
+            r3 = tk.Frame(cb_body, bg=CARD_BG)
+            r3.pack(fill=tk.X, pady=(4, 0))
+            tk.Label(r3, text=i18n.t("cb_calcule"), bg=CARD_BG, fg="#777",
+                     font=("Segoe UI", 9), width=22, anchor="w").pack(side=tk.LEFT)
+            self._lbl_cb_calcule = tk.Label(r3, text="0,00 €", bg=CARD_BG,
+                                             fg="#444", font=("Segoe UI", 9))
+            self._lbl_cb_calcule.pack(side=tk.LEFT, padx=(4, 20))
+            tk.Label(r3, text=i18n.t("cb_ecart"), bg=CARD_BG, fg="#777",
+                     font=("Segoe UI", 9)).pack(side=tk.LEFT)
+            self._lbl_ecart = tk.Label(r3, text="0,00 €", bg=CARD_BG,
+                                        fg=GREEN, font=("Segoe UI", 9, "bold"))
+            self._lbl_ecart.pack(side=tk.LEFT, padx=6)
 
         # ── actifs ────────────────────────────────────────────────────────────
         act_wrap = tk.Frame(pat_wrap, bg=BG)

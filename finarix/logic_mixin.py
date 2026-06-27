@@ -50,21 +50,28 @@ class AppLogicMixin:
             return ""
 
     def _build_payload(self):
+        cb = to_float(self._compte_bc_var.get()) if self._compte_bc_var else 0.0
         return {
-            "solde_initial": to_float(self._solde_var.get()),
-            "actifs":        self._collect_actifs(),
-            "dettes":        self._collect_dettes(),
-            "revenu":        self._collect("revenu"),
-            "fixe":          self._collect("fixe"),
-            "variable":      self._collect("variable"),
-            "note":          self._get_note(),
+            "solde_initial":   to_float(self._solde_var.get()),
+            "compte_bancaire": cb,
+            "actifs":          self._collect_actifs(),
+            "dettes":          self._collect_dettes(),
+            "revenu":          self._collect("revenu"),
+            "fixe":            self._collect("fixe"),
+            "variable":        self._collect("variable"),
+            "note":            self._get_note(),
         }
 
     def _carry_balance(self, payload):
-        solde_final = compute_solde_final(payload, use_reel=self._is_bilan())
+        if self._is_bilan():
+            # Next month opens at the real bank balance (not the calculated figure)
+            solde_next = payload.get("compte_bancaire",
+                                      compute_solde_final(payload, use_reel=True))
+        else:
+            solde_next = compute_solde_final(payload, use_reel=False)
         ny, nm = next_ym(self.view_year, self.view_month)
         nxt = load_month_file(ny, nm) or copy.deepcopy(DEFAULT_DATA)
-        nxt["solde_initial"] = solde_final
+        nxt["solde_initial"] = solde_next
         save_month_file(ny, nm, nxt)
 
     def _save_silent(self):
@@ -101,11 +108,11 @@ class AppLogicMixin:
             self._btn_save.pack(side=tk.RIGHT, padx=12)
 
     def _update_solde_lock(self):
-        locked = self._is_locked()
+        # solde_initial is always read-only — it is set automatically by saving
+        # the previous month's bilan (compte bancaire réel → next solde_initial)
         self._solde_entry.config(
-            state=tk.DISABLED if locked else tk.NORMAL,
-            bg=LOCK_BG if locked else CARD_BG,
-            fg=LOCK_FG if locked else "#333",
+            state=tk.DISABLED,
+            bg=LOCK_BG, fg=LOCK_FG,
             disabledbackground=LOCK_BG, disabledforeground=LOCK_FG)
 
     # ── navigation ────────────────────────────────────────────────────────────
@@ -130,6 +137,23 @@ class AppLogicMixin:
             _map = {"compte": "Compte bancaire", "tricount": "Tricount", "etoro": "eToro"}
             data["actifs"] = [{"label": _map.get(k, k), "montant": v}
                               for k, v in data["actifs"].items()]
+        # Migrate "Compte bancaire" from actifs list → dedicated compte_bancaire field
+        if "compte_bancaire" not in data:
+            new_actifs, cb_val = [], None
+            for a in data.get("actifs", []):
+                if a.get("label") == "Compte bancaire":
+                    cb_val = a.get("montant", 0.0)
+                else:
+                    new_actifs.append(a)
+            if cb_val is None:
+                cb_val = compute_solde_final(data, use_reel=True)
+            data["compte_bancaire"] = cb_val
+            data["actifs"] = new_actifs
+        # In bilan mode, if compte_bancaire equals solde_initial it was never explicitly
+        # confirmed — replace with the calculated closing balance as a better estimate
+        si = data.get("solde_initial", 0.0)
+        if self._is_bilan() and abs(data.get("compte_bancaire", si) - si) < 0.005:
+            data["compte_bancaire"] = compute_solde_final(data, use_reel=True)
         self._bilan_editing = False
         self._solde_var.set(f"{data.get('solde_initial', 0.0):.2f}")
         self._rebuild_body(data)
@@ -187,7 +211,22 @@ class AppLogicMixin:
             text=fmt(solde_final),
             fg=GREEN if solde_final >= 0 else RED)
 
-        total_actifs = sum(to_float(r["montant"].get()) for r in self._actif_rows)
+        # Compte bancaire: update display in prévision, show écart in bilan
+        if self._compte_bc_var is not None:
+            if bilan:
+                cb_reel = to_float(self._compte_bc_var.get())
+                ecart   = cb_reel - solde_final
+                if self._lbl_cb_calcule:
+                    self._lbl_cb_calcule.config(text=fmt(solde_final))
+                if self._lbl_ecart:
+                    self._lbl_ecart.config(text=fmt(ecart),
+                                           fg=GREEN if abs(ecart) < 0.005 else RED)
+            else:
+                # Auto-fill compte_bc = forecast solde_fin
+                self._compte_bc_var.set(f"{solde_final:.2f}")
+
+        cb_fin       = to_float(self._compte_bc_var.get()) if self._compte_bc_var else 0.0
+        total_actifs = cb_fin + sum(to_float(r["montant"].get()) for r in self._actif_rows)
         total_dettes = sum(to_float(r["montant"].get()) for r in self._dette_rows)
         patrimoine   = total_actifs - total_dettes
 

@@ -37,6 +37,13 @@ _T = {
     "col_prevoir":   {"fr": "Prévoir (€)", "en": "Planned (€)", "vi": "Dự kiến (€)"},
     "col_reel":      {"fr": "Réel (€)",    "en": "Actual (€)",  "vi": "Thực tế (€)"},
 
+    # ── compte bancaire block ─────────────────────────────────────────────────
+    "cb_titre":    {"fr": "Compte bancaire",        "en": "Bank account",        "vi": "Tài khoản ngân hàng"},
+    "cb_debut":    {"fr": "Début de mois :",         "en": "Month opening :",     "vi": "Đầu tháng :"},
+    "cb_fin":      {"fr": "Fin de mois :",           "en": "Month closing :",     "vi": "Cuối tháng :"},
+    "cb_calcule":  {"fr": "Calculé :",               "en": "Calculated :",        "vi": "Tính toán :"},
+    "cb_ecart":    {"fr": "Écart :",                 "en": "Difference :",        "vi": "Chênh lệch :"},
+
     # ── patrimoine ────────────────────────────────────────────────────────────
     "pat_titre":           {"fr": "Tổng tài sản — Patrimoine", "en": "Net Worth",           "vi": "Tổng tài sản"},
     "pat_actifs":          {"fr": "Actifs",                     "en": "Assets",              "vi": "Tài sản"},
@@ -129,7 +136,9 @@ _T = {
     "html_epargne":      {"fr": "Épargne",    "en": "Savings",  "vi": "Tiết kiệm"},
     "html_solde_debut":  {"fr": "Solde début :", "en": "Opening:", "vi": "Đầu tháng:"},
     "html_solde_fin":    {"fr": "Solde fin :",   "en": "Closing:", "vi": "Cuối tháng:"},
-    "html_patrimoine":   {"fr": "Patrimoine",     "en": "Net Worth",        "vi": "Tài sản ròng"},
+    "html_cb":           {"fr": "Compte bancaire", "en": "Bank account",     "vi": "Tài khoản ngân hàng"},
+    "html_cb_ecart":     {"fr": "Écart",           "en": "Difference",       "vi": "Chênh lệch"},
+    "html_patrimoine":   {"fr": "Patrimoine",       "en": "Net Worth",        "vi": "Tài sản ròng"},
     "html_total_actifs": {"fr": "Total actifs",   "en": "Total assets",     "vi": "Tổng tài sản"},
     "html_total_dettes": {"fr": "Total dettes",   "en": "Total liabilities","vi": "Tổng nợ"},
     "html_pat_net":      {"fr": "Patrimoine net :","en": "Net worth:",       "vi": "Tài sản ròng:"},

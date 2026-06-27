@@ -29,13 +29,25 @@ def export_html(payload, year, month, is_bilan):
     si   = payload["solde_initial"]
     sf   = si + epg
 
+    cb = payload.get("compte_bancaire", payload.get("solde_initial", 0.0))
     actifs_list = payload.get("actifs", [])
     if isinstance(actifs_list, dict):  # legacy format
         actifs_list = [{"label": k, "montant": v} for k, v in actifs_list.items()]
-    ta = sum(a["montant"] for a in actifs_list)
+    ta     = cb + sum(a["montant"] for a in actifs_list)
     dettes = payload.get("dettes", [])
     td     = sum(d["montant"] for d in dettes)
     pat    = ta - td
+
+    ecart_html = ""
+    if is_bilan:
+        ecart      = cb - sf
+        ecart_col  = "#27AE60" if abs(ecart) < 0.005 else "#E74C3C"
+        ecart_html = (
+            f'<span>{i18n.t("html_cb")} '
+            f'<b style="color:{color(cb)}">{fmt(cb)}</b></span>'
+            f'<span>{i18n.t("html_cb_ecart")} '
+            f'<b style="color:{ecart_col}">{fmt(ecart)}</b></span>'
+        )
 
     mode_bg = "#1A5276" if is_bilan else "#784212"
 
@@ -53,7 +65,10 @@ def export_html(payload, year, month, is_bilan):
         note_html = (f"<h3>{i18n.t('html_notes')}</h3>"
                      f"<p style='white-space:pre-wrap'>{note_val}</p>")
 
-    actifs_rows = "".join(
+    cb_row = (f"<tr style='background:#EBF5FB'>"
+              f"<td><b>{i18n.t('html_cb')}</b></td>"
+              f"<td style='text-align:right'><b>{fmt(cb)}</b></td></tr>")
+    actifs_rows = cb_row + "".join(
         f"<tr><td>{a['label']}</td>"
         f"<td style='text-align:right'>{fmt(a['montant'])}</td></tr>"
         for a in actifs_list)
@@ -99,6 +114,7 @@ def export_html(payload, year, month, is_bilan):
 <div class="solde-bar">
   <span>{i18n.t('html_solde_debut')} <b style="color:{color(si)}">{fmt(si)}</b></span>
   <span>{i18n.t('html_solde_fin')} <b style="color:{color(sf)}">{fmt(sf)}</b></span>
+  {ecart_html}
 </div>
 
 <div class="pat-box">
