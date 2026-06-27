@@ -1,6 +1,9 @@
+import glob
+import json
 import os
 import tempfile
 import webbrowser
+import zipfile
 
 from finarix.config import MONTHS_FR
 
@@ -127,3 +130,49 @@ def export_html(payload, year, month, is_bilan):
         f.write(html)
         tmp = f.name
     webbrowser.open(f"file:///{tmp.replace(os.sep, '/')}")
+
+
+def export_data_zip(key: bytes, data_directory: str, save_path: str) -> int:
+    """Export all month files as decrypted JSON inside a ZIP. Returns file count."""
+    from cryptography.fernet import Fernet, InvalidToken
+
+    fernet = Fernet(key)
+    count  = 0
+    with zipfile.ZipFile(save_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for path in sorted(glob.glob(os.path.join(data_directory, "*.json"))):
+            with open(path, 'rb') as f:
+                raw = f.read()
+            try:
+                plain = fernet.decrypt(raw)
+            except InvalidToken:
+                plain = raw  # already plaintext (legacy)
+            try:
+                json.loads(plain)  # validate before including
+            except Exception:
+                continue
+            zf.writestr(os.path.basename(path), plain)
+            count += 1
+    return count
+
+
+def import_data_zip(key: bytes, zip_path: str, data_directory: str) -> int:
+    """Import month files from a ZIP, encrypt them, and save. Returns file count."""
+    from cryptography.fernet import Fernet
+
+    fernet = Fernet(key)
+    count  = 0
+    with zipfile.ZipFile(zip_path, 'r') as zf:
+        for name in zf.namelist():
+            if not name.endswith('.json'):
+                continue
+            plain = zf.read(name)
+            try:
+                json.loads(plain)  # validate JSON
+            except Exception:
+                continue
+            encrypted = fernet.encrypt(plain)
+            dest = os.path.join(data_directory, os.path.basename(name))
+            with open(dest, 'wb') as f:
+                f.write(encrypted)
+            count += 1
+    return count

@@ -83,7 +83,15 @@ class UIBuildMixin:
         tk.Button(bot, text="  Exporter PDF  ", bg="#566573", fg="white",
                   font=("Segoe UI", 10), relief=tk.FLAT, padx=14, pady=5,
                   activebackground="#424949", cursor="hand2",
-                  command=self._export_html).pack(side=tk.LEFT, padx=12)
+                  command=self._export_html).pack(side=tk.LEFT, padx=(12, 4))
+        tk.Button(bot, text="  Sauvegarder données  ", bg="#6C3483", fg="white",
+                  font=("Segoe UI", 10), relief=tk.FLAT, padx=14, pady=5,
+                  activebackground="#512E5F", cursor="hand2",
+                  command=self._export_data).pack(side=tk.LEFT, padx=4)
+        tk.Button(bot, text="  Restaurer données  ", bg="#1A5276", fg="white",
+                  font=("Segoe UI", 10), relief=tk.FLAT, padx=14, pady=5,
+                  activebackground="#154360", cursor="hand2",
+                  command=self._import_data).pack(side=tk.LEFT, padx=4)
         self._btn_modifier = tk.Button(bot, text="  Modifier  ",
                                        bg="#F39C12", fg="white",
                                        font=("Segoe UI", 10, "bold"),

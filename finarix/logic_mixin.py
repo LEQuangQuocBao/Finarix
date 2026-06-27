@@ -1,11 +1,12 @@
 import copy
 import tkinter as tk
+from tkinter import filedialog, messagebox
 
 from finarix.config import (
     BG, CARD_BG, LOCK_BG, LOCK_FG, HDR_FG,
     GREEN, RED, MONTHS_FR, DEFAULT_DATA,
 )
-from finarix.storage import load_month_file, save_month_file, next_ym, prev_ym
+from finarix.storage import load_month_file, save_month_file, next_ym, prev_ym, data_dir, get_key
 from finarix.finance import to_float, compute_solde_final
 from finarix import export
 from finarix.dialogs.forward import ApplyForwardDialog
@@ -197,3 +198,39 @@ class AppLogicMixin:
     def _export_html(self):
         export.export_html(self._build_payload(), self.view_year, self.view_month,
                            self._is_bilan())
+
+    def _export_data(self):
+        path = filedialog.asksaveasfilename(
+            title="Sauvegarder toutes les données",
+            defaultextension=".zip",
+            filetypes=[("Archive ZIP", "*.zip")],
+            initialfile="Finarix_sauvegarde.zip",
+        )
+        if not path:
+            return
+        try:
+            n = export.export_data_zip(get_key(), data_dir(), path)
+            messagebox.showinfo("Sauvegarde réussie",
+                                f"{n} mois exportés vers :\n{path}")
+        except Exception as e:
+            messagebox.showerror("Erreur", str(e))
+
+    def _import_data(self):
+        path = filedialog.askopenfilename(
+            title="Restaurer les données",
+            filetypes=[("Archive ZIP", "*.zip")],
+        )
+        if not path:
+            return
+        if not messagebox.askyesno(
+            "Confirmer la restauration",
+            "Les données existantes seront remplacées.\n\nContinuer ?",
+        ):
+            return
+        try:
+            n = export.import_data_zip(get_key(), path, data_dir())
+            messagebox.showinfo("Restauration réussie",
+                                f"{n} mois importés.")
+            self._load_month()
+        except Exception as e:
+            messagebox.showerror("Erreur", str(e))

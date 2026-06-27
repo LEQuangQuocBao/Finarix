@@ -4,11 +4,22 @@ from datetime import date
 from finarix.config import BG
 from finarix.ui_mixin import UIBuildMixin
 from finarix.logic_mixin import AppLogicMixin
+from finarix import storage
+from finarix.dialogs.login import LoginDialog
 
 
 class FinanceApp(UIBuildMixin, AppLogicMixin, tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
+        self.withdraw()  # hide until login succeeds
+
+        key = LoginDialog(self).run()
+        if key is None:
+            self.destroy()
+            return
+
+        storage.set_key(key)
+
         self.title("Finarix")
         self.geometry("880x760")
         self.minsize(740, 560)
@@ -33,3 +44,4 @@ class FinanceApp(UIBuildMixin, AppLogicMixin, tk.Tk):
 
         self._build_ui()
         self._load_month()
+        self.deiconify()
