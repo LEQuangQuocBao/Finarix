@@ -1,0 +1,129 @@
+import os
+import tempfile
+import webbrowser
+
+from finarix.config import MONTHS_FR
+
+
+def export_html(payload, year, month, is_bilan):
+    field    = "reel" if is_bilan else "prevoir"
+    mode_lbl = "Bilan" if is_bilan else "Prévision"
+    month_lbl = f"{MONTHS_FR[month]} {year}"
+
+    def fmt(v):
+        s = "-" if v < 0 else ""
+        return f"{s}{abs(v):,.2f}&nbsp;€".replace(",", "&nbsp;")
+
+    def color(v, invert=False):
+        pos = v >= 0 if not invert else v <= 0
+        return "#27AE60" if pos else "#E74C3C"
+
+    rev  = sum(r[field] for r in payload["revenu"])
+    fix  = sum(r[field] for r in payload["fixe"])
+    var  = sum(r[field] for r in payload["variable"])
+    dep  = fix + var
+    epg  = rev - dep
+    si   = payload["solde_initial"]
+    sf   = si + epg
+
+    actifs = payload.get("actifs", {})
+    ta     = sum(actifs.values())
+    dettes = payload.get("dettes", [])
+    td     = sum(d["montant"] for d in dettes)
+    pat    = ta - td
+
+    mode_bg = "#1A5276" if is_bilan else "#784212"
+
+    def rows_html(items):
+        out = ""
+        for r in items:
+            v = r.get(field, 0)
+            out += (f"<tr><td>{r['label']}</td>"
+                    f"<td style='text-align:right'>{fmt(v)}</td></tr>\n")
+        return out
+
+    note_html = ""
+    note_val  = payload.get("note", "")
+    if note_val:
+        note_html = (f"<h3>Notes</h3>"
+                     f"<p style='white-space:pre-wrap'>{note_val}</p>")
+
+    dettes_rows = "".join(
+        f"<tr><td>{d['label']}</td>"
+        f"<td style='text-align:right'>{fmt(d['montant'])}</td></tr>"
+        for d in dettes)
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Finance {month_lbl}</title>
+<style>
+  body{{font-family:'Segoe UI',sans-serif;max-width:720px;margin:0 auto;padding:20px;color:#222}}
+  h1{{background:#1E2D3D;color:#fff;padding:12px 20px;border-radius:4px;display:flex;align-items:center;gap:14px}}
+  .badge{{font-size:11px;padding:3px 12px;background:{mode_bg};border-radius:4px}}
+  .summary{{display:flex;gap:10px;margin:16px 0}}
+  .card{{flex:1;border:1px solid #ddd;border-radius:6px;padding:12px;text-align:center}}
+  .card .t{{color:#888;font-size:12px;margin-bottom:4px}}
+  .card .v{{font-size:18px;font-weight:700}}
+  .solde-bar{{background:#EBF5FB;padding:10px 14px;border-radius:4px;margin:10px 0;display:flex;gap:30px}}
+  .solde-bar span{{font-size:13px;color:#555}} .solde-bar b{{font-size:15px}}
+  h3{{border-left:4px solid #1A5276;padding-left:10px;font-size:14px;margin-top:22px}}
+  h3.fixe{{border-color:#145A32}} h3.var{{border-color:#784212}} h3.pat{{border-color:#17202A}}
+  table{{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:13px}}
+  tr:nth-child(odd){{background:#f9f9f9}}
+  td{{padding:6px 10px}}
+  .tot td{{font-weight:700;border-top:2px solid #ddd}}
+  .pat-box{{border:1px solid #ddd;border-radius:6px;padding:12px;margin:12px 0}}
+  .pat-net{{font-size:15px;font-weight:700;margin-top:8px}}
+  @media print{{body{{max-width:100%}}}}
+</style></head><body>
+<h1>Finarix — {month_lbl} <span class="badge">{mode_lbl}</span></h1>
+
+<div class="summary">
+  <div class="card"><div class="t">Revenus</div>
+    <div class="v" style="color:{color(rev)}">{fmt(rev)}</div></div>
+  <div class="card"><div class="t">Dépenses</div>
+    <div class="v" style="color:{color(dep, invert=True)}">{fmt(dep)}</div></div>
+  <div class="card"><div class="t">Épargne</div>
+    <div class="v" style="color:{color(epg)}">{fmt(epg)}</div></div>
+</div>
+
+<div class="solde-bar">
+  <span>Solde début : <b style="color:{color(si)}">{fmt(si)}</b></span>
+  <span>Solde fin : <b style="color:{color(sf)}">{fmt(sf)}</b></span>
+</div>
+
+<div class="pat-box">
+  <h3 class="pat" style="margin-top:0">Patrimoine</h3>
+  <table>
+    <tr><td>Compte bancaire</td><td style="text-align:right">{fmt(actifs.get('compte',0))}</td></tr>
+    <tr><td>Tricount</td><td style="text-align:right">{fmt(actifs.get('tricount',0))}</td></tr>
+    <tr><td>eToro</td><td style="text-align:right">{fmt(actifs.get('etoro',0))}</td></tr>
+    <tr class="tot"><td>Total actifs</td><td style="text-align:right;color:{color(ta)}">{fmt(ta)}</td></tr>
+  </table>
+  <table>{dettes_rows}
+    <tr class="tot"><td>Total dettes</td><td style="text-align:right;color:#E74C3C">{fmt(td)}</td></tr>
+  </table>
+  <div class="pat-net" style="color:{color(pat)}">Patrimoine net : {fmt(pat)}</div>
+</div>
+
+<h3>Revenus</h3>
+<table>{rows_html(payload['revenu'])}
+<tr class="tot"><td>Total</td><td style="text-align:right">{fmt(rev)}</td></tr></table>
+
+<h3 class="fixe">Dépenses fixes</h3>
+<table>{rows_html(payload['fixe'])}
+<tr class="tot"><td>Total</td><td style="text-align:right">{fmt(fix)}</td></tr></table>
+
+<h3 class="var">Dépenses variables</h3>
+<table>{rows_html(payload['variable'])}
+<tr class="tot"><td>Total</td><td style="text-align:right">{fmt(var)}</td></tr></table>
+
+{note_html}
+<p style="color:#bbb;font-size:11px;margin-top:40px">Finarix</p>
+</body></html>"""
+
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.html',
+                                     delete=False, encoding='utf-8') as f:
+        f.write(html)
+        tmp = f.name
+    webbrowser.open(f"file:///{tmp.replace(os.sep, '/')}")
