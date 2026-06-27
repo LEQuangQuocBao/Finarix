@@ -128,6 +128,24 @@ _T = {
     "dlg_error":         {"fr": "Erreur", "en": "Error", "vi": "Lỗi"},
     "ft_zip":            {"fr": "Archive ZIP", "en": "ZIP Archive", "vi": "File ZIP"},
 
+    # ── header menu ───────────────────────────────────────────────────────────
+    "menu_sauvegarde":   {"fr": "Sauvegarder données",  "en": "Backup data",       "vi": "Sao lưu dữ liệu"},
+    "menu_restaurer":    {"fr": "Restaurer données",    "en": "Restore data",      "vi": "Khôi phục dữ liệu"},
+    "menu_about":        {"fr": "À propos",             "en": "About",             "vi": "Giới thiệu"},
+
+    # ── about dialog ──────────────────────────────────────────────────────────
+    "about_title":       {"fr": "À propos de Finarix",  "en": "About Finarix",     "vi": "Giới thiệu Finarix"},
+    "about_subtitle":    {"fr": "Gestionnaire de finances personnelles",
+                          "en": "Personal finance tracker",
+                          "vi": "Quản lý tài chính cá nhân"},
+    "about_version":     {"fr": "Version",              "en": "Version",           "vi": "Phiên bản"},
+    "about_chiffrement": {"fr": "Chiffrement",          "en": "Encryption",        "vi": "Mã hóa"},
+    "about_chiffrement_v":{"fr":"AES-256 (Fernet · PBKDF2 480k iter.)",
+                           "en":"AES-256 (Fernet · PBKDF2 480k iter.)",
+                           "vi":"AES-256 (Fernet · PBKDF2 480k lần)"},
+    "about_dossier":     {"fr": "Dossier données",      "en": "Data folder",       "vi": "Thư mục dữ liệu"},
+    "about_close":       {"fr": "Fermer",               "en": "Close",             "vi": "Đóng"},
+
     # ── HTML export ───────────────────────────────────────────────────────────
     "html_bilan":        {"fr": "Bilan",      "en": "Balance",  "vi": "Quyết toán"},
     "html_prevision":    {"fr": "Prévision",  "en": "Forecast", "vi": "Dự báo"},

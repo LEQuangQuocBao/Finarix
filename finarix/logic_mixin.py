@@ -3,8 +3,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 
 from finarix.config import (
-    BG, CARD_BG, LOCK_BG, LOCK_FG, HDR_FG,
-    GREEN, RED, DEFAULT_DATA,
+    BG, CARD_BG, LOCK_BG, LOCK_FG, HDR_BG, HDR_FG,
+    ACCENT, BORDER, FOOT_BG, GREEN, RED, DEFAULT_DATA,
 )
 from finarix.storage import load_month_file, save_month_file, next_ym, prev_ym, data_dir, get_key
 from finarix import i18n
@@ -279,6 +279,53 @@ class AppLogicMixin:
             self._load_month()
         except Exception as e:
             messagebox.showerror(i18n.t("dlg_error"), str(e))
+
+    def _show_about(self):
+        dlg = tk.Toplevel(self)
+        dlg.title(i18n.t("about_title"))
+        dlg.configure(bg=BG)
+        dlg.resizable(False, False)
+        dlg.grab_set()
+        dlg.transient(self)
+
+        hdr = tk.Frame(dlg, bg=HDR_BG, padx=32, pady=20)
+        hdr.pack(fill=tk.X)
+        tk.Label(hdr, text="Finarix", bg=HDR_BG, fg="#FFFFFF",
+                 font=("Segoe UI", 22, "bold")).pack()
+        tk.Label(hdr, text=i18n.t("about_subtitle"), bg=HDR_BG, fg="#90A4B0",
+                 font=("Segoe UI", 10)).pack(pady=(4, 0))
+
+        body = tk.Frame(dlg, bg=BG, padx=28, pady=18)
+        body.pack(fill=tk.X)
+        rows = [
+            (i18n.t("about_version"),     "1.0.0"),
+            (i18n.t("about_chiffrement"), i18n.t("about_chiffrement_v")),
+            (i18n.t("about_dossier"),     data_dir()),
+        ]
+        for i, (label, value) in enumerate(rows):
+            if i > 0:
+                tk.Frame(body, bg=BORDER, height=1).pack(fill=tk.X, pady=(4, 4))
+            row = tk.Frame(body, bg=BG)
+            row.pack(fill=tk.X)
+            tk.Label(row, text=label, bg=BG, fg="#777",
+                     font=("Segoe UI", 9), width=16, anchor="w").pack(side=tk.LEFT)
+            tk.Label(row, text=value, bg=BG, fg="#333",
+                     font=("Segoe UI", 9), anchor="w",
+                     wraplength=320, justify=tk.LEFT).pack(side=tk.LEFT, padx=8)
+
+        foot = tk.Frame(dlg, bg=FOOT_BG, pady=10)
+        foot.pack(fill=tk.X)
+        tk.Button(foot, text=i18n.t("about_close"), bg=ACCENT, fg="white",
+                  font=("Segoe UI", 10, "bold"), relief=tk.FLAT,
+                  padx=24, pady=6, cursor="hand2",
+                  activebackground="#1f638d",
+                  command=dlg.destroy).pack()
+
+        dlg.update_idletasks()
+        w, h = dlg.winfo_reqwidth(), dlg.winfo_reqheight()
+        x = (self.winfo_rootx() + (self.winfo_width()  - w) // 2)
+        y = (self.winfo_rooty() + (self.winfo_height() - h) // 2)
+        dlg.geometry(f"{w}x{h}+{x}+{y}")
 
     def _change_lang(self, lang: str):
         if i18n.get_lang() == lang:

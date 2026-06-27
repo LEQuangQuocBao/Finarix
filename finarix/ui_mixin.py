@@ -37,6 +37,21 @@ class UIBuildMixin:
                                   relief=tk.GROOVE)
         self._lbl_mode.pack(side=tk.RIGHT, padx=6)
 
+        # ── ☰ header menu ─────────────────────────────────────────────────────
+        mb = tk.Menubutton(top, text="☰", bg=HDR_BG, fg=HDR_FG,
+                           font=("Segoe UI", 13), relief=tk.FLAT, bd=0,
+                           activebackground="#111e28", activeforeground=HDR_FG,
+                           cursor="hand2", padx=10, pady=2, direction="below")
+        mb_menu = tk.Menu(mb, tearoff=0, bg="#FFFFFF", fg="#222",
+                          activebackground=ACCENT, activeforeground="white",
+                          font=("Segoe UI", 10))
+        mb_menu.add_command(label=i18n.t("menu_sauvegarde"), command=self._export_data)
+        mb_menu.add_command(label=i18n.t("menu_restaurer"),  command=self._import_data)
+        mb_menu.add_separator()
+        mb_menu.add_command(label=i18n.t("menu_about"),      command=self._show_about)
+        mb["menu"] = mb_menu
+        mb.pack(side=tk.RIGHT, padx=(0, 6))
+
         lang_frame = tk.Frame(top, bg=HDR_BG)
         lang_frame.pack(side=tk.RIGHT, padx=10)
         for code, label in i18n.LANGS:
@@ -99,14 +114,6 @@ class UIBuildMixin:
                   font=("Segoe UI", 10), relief=tk.FLAT, padx=14, pady=5,
                   activebackground="#424949", cursor="hand2",
                   command=self._export_html).pack(side=tk.LEFT, padx=(12, 4))
-        tk.Button(bot, text=i18n.t("btn_save_data"), bg="#6C3483", fg="white",
-                  font=("Segoe UI", 10), relief=tk.FLAT, padx=14, pady=5,
-                  activebackground="#512E5F", cursor="hand2",
-                  command=self._export_data).pack(side=tk.LEFT, padx=4)
-        tk.Button(bot, text=i18n.t("btn_restore_data"), bg="#1A5276", fg="white",
-                  font=("Segoe UI", 10), relief=tk.FLAT, padx=14, pady=5,
-                  activebackground="#154360", cursor="hand2",
-                  command=self._import_data).pack(side=tk.LEFT, padx=4)
         self._btn_modifier = tk.Button(bot, text=i18n.t("btn_modifier"),
                                        bg="#F39C12", fg="white",
                                        font=("Segoe UI", 10, "bold"),
