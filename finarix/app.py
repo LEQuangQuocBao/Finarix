@@ -47,6 +47,8 @@ class FinanceApp(UIBuildMixin, AppLogicMixin, tk.Tk):
         self._compte_bc_var        = None
         self._lbl_cb_calcule       = None
         self._lbl_ecart            = None
+        self._compte_bc_manual     = False
+        self._cb_updating          = False
 
         self._build_ui()
         self._load_month()

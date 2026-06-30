@@ -94,6 +94,7 @@ class AppLogicMixin:
     def _on_modifier_click(self):
         data = self._build_payload()
         self._bilan_editing = True
+        self._compte_bc_manual = False
         self._rebuild_body(data)
         self._update_solde_lock()
         self._update_buttons()
@@ -211,18 +212,33 @@ class AppLogicMixin:
             text=fmt(solde_final),
             fg=GREEN if solde_final >= 0 else RED)
 
-        # Compte bancaire: update display in prévision, show écart in bilan
+        # Compte bancaire logic:
+        #  - prévision      : auto = solde_fin (Label, no trace)
+        #  - bilan locked   : show stored value + écart
+        #  - bilan editing, not manual : auto-follow solde_fin (écart = 0)
+        #  - bilan editing, manual     : show user value + écart
         if self._compte_bc_var is not None:
             if bilan:
-                cb_reel = to_float(self._compte_bc_var.get())
-                ecart   = cb_reel - solde_final
-                if self._lbl_cb_calcule:
-                    self._lbl_cb_calcule.config(text=fmt(solde_final))
-                if self._lbl_ecart:
-                    self._lbl_ecart.config(text=fmt(ecart),
-                                           fg=GREEN if abs(ecart) < 0.005 else RED)
+                editing_auto = (not self._is_locked()
+                                and not getattr(self, '_compte_bc_manual', False))
+                if editing_auto:
+                    self._cb_updating = True
+                    self._compte_bc_var.set(f"{solde_final:.2f}")
+                    self._cb_updating = False
+                    if self._lbl_cb_calcule:
+                        self._lbl_cb_calcule.config(text=fmt(solde_final))
+                    if self._lbl_ecart:
+                        self._lbl_ecart.config(text=fmt(0.0), fg=GREEN)
+                else:
+                    cb_reel = to_float(self._compte_bc_var.get())
+                    ecart   = cb_reel - solde_final
+                    if self._lbl_cb_calcule:
+                        self._lbl_cb_calcule.config(text=fmt(solde_final))
+                    if self._lbl_ecart:
+                        self._lbl_ecart.config(text=fmt(ecart),
+                                               fg=GREEN if abs(ecart) < 0.005 else RED)
             else:
-                # Auto-fill compte_bc = forecast solde_fin
+                # Prévision: auto = solde_fin
                 self._compte_bc_var.set(f"{solde_final:.2f}")
 
         cb_fin       = to_float(self._compte_bc_var.get()) if self._compte_bc_var else 0.0

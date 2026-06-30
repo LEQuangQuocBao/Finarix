@@ -156,6 +156,8 @@ class UIBuildMixin:
         self._compte_bc_var        = None
         self._lbl_cb_calcule       = None
         self._lbl_ecart            = None
+        self._compte_bc_manual     = False
+        self._cb_updating          = False
 
         self._build_patrimoine(data)
 
@@ -244,7 +246,14 @@ class UIBuildMixin:
                          width=14, justify=tk.RIGHT, bg=CARD_BG, fg="#222",
                          highlightthickness=1, highlightbackground=BORDER)
             e.pack(side=tk.LEFT, ipady=4, padx=(0, 4))
-            self._compte_bc_var.trace_add("write", lambda *_: self._recalculate())
+
+            def _on_cb_change(*_):
+                if getattr(self, '_cb_updating', False):
+                    return  # programmatic update — ignore
+                self._compte_bc_manual = True
+                self._recalculate()
+
+            self._compte_bc_var.trace_add("write", _on_cb_change)
         else:
             tk.Label(r2, textvariable=self._compte_bc_var,
                      bg=LOCK_BG if locked else CARD_BG,
