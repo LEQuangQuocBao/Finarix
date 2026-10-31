@@ -62,6 +62,14 @@ class AppLogicMixin:
             "note":            self._get_note(),
         }
 
+    @staticmethod
+    def _merge_items(current, existing):
+        """Sync labels from current month to next, keeping existing amounts where label matches."""
+        existing_amounts = {d["label"]: d["montant"] for d in existing}
+        return [{"label": d["label"],
+                 "montant": existing_amounts.get(d["label"], d["montant"])}
+                for d in current]
+
     def _carry_balance(self, payload):
         if self._is_bilan():
             # Next month opens at the real bank balance (not the calculated figure)
@@ -72,6 +80,13 @@ class AppLogicMixin:
         ny, nm = next_ym(self.view_year, self.view_month)
         nxt = load_month_file(ny, nm) or copy.deepcopy(DEFAULT_DATA)
         nxt["solde_initial"] = solde_next
+        # Always propagate dettes and actifs structure to next month:
+        # — new labels are added with current month's amount
+        # — existing labels keep next month's amount (user may have updated them)
+        nxt["dettes"] = self._merge_items(payload.get("dettes", []),
+                                          nxt.get("dettes", []))
+        nxt["actifs"]  = self._merge_items(payload.get("actifs",  []),
+                                           nxt.get("actifs",  []))
         save_month_file(ny, nm, nxt)
 
     def _save_silent(self):
