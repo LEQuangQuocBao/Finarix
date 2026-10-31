@@ -460,7 +460,8 @@ class UIBuildMixin:
 
     def _add_row(self, key, label="", prevoir=0.0, reel=0.0):
         locked      = self._is_locked()
-        reel_locked = not self._is_bilan() or locked
+        is_future   = not self._is_bilan() and not self._is_current_month()
+        reel_locked = locked or is_future
         frame = self._section_frames[key]
 
         rf = tk.Frame(frame, bg=CARD_BG)

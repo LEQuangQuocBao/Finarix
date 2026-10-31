@@ -8,8 +8,12 @@ import zipfile
 from finarix import i18n
 
 
-def export_html(payload, year, month, is_bilan):
-    field     = "reel" if is_bilan else "prevoir"
+def export_html(payload, year, month, is_bilan, use_reel=None):
+    if use_reel is None:
+        use_reel = is_bilan
+    field_name = "reel" if use_reel else "prevoir"
+    def field(r):
+        return r[field_name]
     mode_lbl  = i18n.t("html_bilan") if is_bilan else i18n.t("html_prevision")
     month_lbl = f"{i18n.months()[month]} {year}"
 
@@ -21,9 +25,9 @@ def export_html(payload, year, month, is_bilan):
         pos = v >= 0 if not invert else v <= 0
         return "#27AE60" if pos else "#E74C3C"
 
-    rev  = sum(r[field] for r in payload["revenu"])
-    fix  = sum(r[field] for r in payload["fixe"])
-    var  = sum(r[field] for r in payload["variable"])
+    rev  = sum(field(r) for r in payload["revenu"])
+    fix  = sum(field(r) for r in payload["fixe"])
+    var  = sum(field(r) for r in payload["variable"])
     dep  = fix + var
     epg  = rev - dep
     si   = payload["solde_initial"]
@@ -54,7 +58,7 @@ def export_html(payload, year, month, is_bilan):
     def rows_html(items):
         out = ""
         for r in items:
-            v = r.get(field, 0)
+            v = field(r)
             out += (f"<tr><td>{r['label']}</td>"
                     f"<td style='text-align:right'>{fmt(v)}</td></tr>\n")
         return out

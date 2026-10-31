@@ -20,6 +20,9 @@ class AppLogicMixin:
     def _is_bilan(self):
         return (self.view_year, self.view_month) < (self._today.year, self._today.month)
 
+    def _is_current_month(self):
+        return (self.view_year, self.view_month) == (self._today.year, self._today.month)
+
     def _is_locked(self):
         return self._is_bilan() and not self._bilan_editing
 
@@ -60,6 +63,7 @@ class AppLogicMixin:
             "fixe":            self._collect("fixe"),
             "variable":        self._collect("variable"),
             "note":            self._get_note(),
+            "reel_synced":     getattr(self, "_reel_synced", False),
         }
 
     @staticmethod
@@ -76,7 +80,9 @@ class AppLogicMixin:
             solde_next = payload.get("compte_bancaire",
                                       compute_solde_final(payload, use_reel=True))
         else:
-            solde_next = compute_solde_final(payload, use_reel=False)
+            # Current month is tracked live via Réel; months further ahead are
+            # still pure forecast.
+            solde_next = compute_solde_final(payload, use_reel=self._is_current_month())
         ny, nm = next_ym(self.view_year, self.view_month)
         nxt = load_month_file(ny, nm) or copy.deepcopy(DEFAULT_DATA)
         nxt["solde_initial"] = solde_next
@@ -170,6 +176,16 @@ class AppLogicMixin:
         si = data.get("solde_initial", 0.0)
         if self._is_bilan() and abs(data.get("compte_bancaire", si) - si) < 0.005:
             data["compte_bancaire"] = compute_solde_final(data, use_reel=True)
+        # First time the current month is opened: seed Réel from Prévoir so the
+        # month is tracked live from day one. Done once per month — later edits
+        # to Réel are never overwritten again.
+        if self._is_current_month() and not data.get("reel_synced"):
+            for key in ("revenu", "fixe", "variable"):
+                for row in data.get(key, []):
+                    row["reel"] = row.get("prevoir", 0.0)
+            data["reel_synced"] = True
+            save_month_file(self.view_year, self.view_month, data)
+        self._reel_synced    = data.get("reel_synced", False)
         self._bilan_editing = False
         self._solde_var.set(f"{data.get('solde_initial', 0.0):.2f}")
         self._rebuild_body(data)
@@ -190,39 +206,35 @@ class AppLogicMixin:
             self._lbl_mode.config(text=i18n.t("mode_prevision"),bg="#784212", fg=HDR_FG)
 
     def _recalculate(self):
+        bilan     = self._is_bilan()
+        use_reel  = bilan or self._is_current_month()
+
+        def row_value(r):
+            field = "reel" if use_reel else "prevoir"
+            return to_float(r[field].get())
+
         def totals(key):
-            ps = rs = 0.0
-            for r in self._row_widgets[key]:
-                ps += to_float(r["prevoir"].get())
-                rs += to_float(r["reel"].get())
-            return ps, rs
+            return sum(row_value(r) for r in self._row_widgets[key])
 
-        rev_p, rev_r = totals("revenu")
-        fix_p, fix_r = totals("fixe")
-        var_p, var_r = totals("variable")
-        dep_p, dep_r = fix_p + var_p, fix_r + var_r
-        epg_p, epg_r = rev_p - dep_p, rev_r - dep_r
+        rev = totals("revenu")
+        dep = totals("fixe") + totals("variable")
+        epg = rev - dep
 
-        bilan      = self._is_bilan()
         solde_init = to_float(self._solde_var.get())
-        rv, dv, ev = (rev_r, dep_r, epg_r) if bilan else (rev_p, dep_p, epg_p)
 
         def fmt(v):
             s = "-" if v < 0 else ""
             return f"{s}{abs(v):,.2f} €".replace(",", " ")
 
-        self._card_rev._val.config(text=fmt(rv), fg=GREEN if rv >= 0 else RED)
-        self._card_dep._val.config(text=fmt(dv), fg=RED   if dv >  0 else GREEN)
-        self._card_epg._val.config(text=fmt(ev), fg=GREEN if ev >= 0 else RED)
+        self._card_rev._val.config(text=fmt(rev), fg=GREEN if rev >= 0 else RED)
+        self._card_dep._val.config(text=fmt(dep), fg=RED   if dep >  0 else GREEN)
+        self._card_epg._val.config(text=fmt(epg), fg=GREEN if epg >= 0 else RED)
 
-        for key, pv, rv2 in (("revenu",   rev_p, rev_r),
-                              ("fixe",     fix_p, fix_r),
-                              ("variable", var_p, var_r)):
+        for key in ("revenu", "fixe", "variable"):
             if key in self._section_total_labels:
-                self._section_total_labels[key].config(
-                    text=fmt(rv2 if bilan else pv))
+                self._section_total_labels[key].config(text=fmt(totals(key)))
 
-        solde_final = solde_init + ev
+        solde_final = solde_init + epg
         self._lbl_solde_final.config(
             text=fmt(solde_final),
             fg=GREEN if solde_final >= 0 else RED)
@@ -274,8 +286,9 @@ class AppLogicMixin:
         self._canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _export_html(self):
+        bilan = self._is_bilan()
         export.export_html(self._build_payload(), self.view_year, self.view_month,
-                           self._is_bilan())
+                           bilan, use_reel=bilan or self._is_current_month())
 
     def _export_data(self):
         path = filedialog.asksaveasfilename(
